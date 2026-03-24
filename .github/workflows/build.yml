@@ -1,0 +1,38 @@
+name: Build Machine APK
+on: 
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: # Позволяет запускать сборку вручную кнопкой на сайте
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04 # Используем стабильную версию Ubuntu
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get Date
+        id: get-date
+        run: |
+          echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      # Кеширование ускоряет повторные сборки в разы
+      - name: Buildozer Cache
+        uses: actions/cache@v3
+        with:
+          path: .buildozer
+          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+
+      - name: Build with Buildozer
+        uses: ArtemSerebrennkov/buildozer-action@v1
+        with:
+          command: buildozer android debug
+          buildozer_version: master
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Machine-Core-Debug-${{ steps.get-date.outputs.date }}
+          path: bin/*.apk
+          
